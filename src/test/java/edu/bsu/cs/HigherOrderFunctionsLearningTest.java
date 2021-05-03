@@ -12,7 +12,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.time.Instant;
 import java.time.Month;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -46,7 +49,7 @@ public class HigherOrderFunctionsLearningTest {
     @Test
     public void testMap() {
         Stream<Integer> input = Stream.of(1, 2, 3);
-        List<Integer> actual = null; // TODO: Replace the `actual` with your solution, here and in all the following.
+        List<Integer> actual = input.map(n -> n+1).collect(Collectors.toList());
         List<Integer> expected = List.of(2, 3, 4);
         Assertions.assertIterableEquals(expected, actual);
     }
@@ -57,7 +60,7 @@ public class HigherOrderFunctionsLearningTest {
     @Test
     public void testFilter() {
         Stream<String> input = Stream.of("a1", "a2", "a3", "b1", "b2", "b3");
-        List<String> actual = null;
+        List<String> actual = input.filter(n -> n.startsWith("b")).collect(Collectors.toList());
         List<String> expected = List.of("b1", "b2", "b3");
         Assertions.assertIterableEquals(expected, actual);
     }
@@ -69,7 +72,8 @@ public class HigherOrderFunctionsLearningTest {
     @Test
     public void testDistinct() {
         Stream<String> input = Stream.of("a1", "a2", "a3", "b1", "b2", "b3");
-        List<String> actual = null;
+        List<String> actual = input.map(n -> n.substring(0,1)).distinct()
+                .collect(Collectors.toList());
         List<String> expected = List.of("a", "b");
         Assertions.assertIterableEquals(expected, actual);
     }
@@ -80,7 +84,8 @@ public class HigherOrderFunctionsLearningTest {
     @Test
     public void testConcatEven() {
         Stream<String> input = Stream.of("a1", "a2", "a3", "b1", "b2", "b3");
-        String actual = null;
+        String actual = input.filter(n -> n.endsWith("2")).map(Object::toString)
+                .collect(Collectors.joining(""));
         String expected = "a2b2";
         Assertions.assertEquals(expected, actual);
     }
@@ -92,7 +97,7 @@ public class HigherOrderFunctionsLearningTest {
     public void testCountByDate() {
         Instant instant = Instant.parse("2021-03-01T00:00:00.00Z");
         Stream<Revision> input = getRevisions("soup04.json");
-        long actual = 0;
+        long actual = input.filter(revision -> revision.timestamp.isBefore(instant)).count();
         int expected = 3;
         Assertions.assertEquals(expected, actual);
     }
@@ -127,7 +132,9 @@ public class HigherOrderFunctionsLearningTest {
     public void testCountWhitelisted() {
         List<String> whitelist = List.of("Sleepy Beauty", "Spencer", "QueasyQ");
         Stream<Revision> input = getRevisions("soup30.json");
-        long actual = 0;
+        long actual = input.filter(revision -> revision.user.contains(whitelist.get(0)) ||
+                revision.user.contains(whitelist.get(1)) ||
+                revision.user.contains(whitelist.get(2))).count();
         int expected = 3;
         Assertions.assertEquals(expected, actual);
     }
@@ -138,7 +145,7 @@ public class HigherOrderFunctionsLearningTest {
     @Test
     public void testCountNonBots() {
         Stream<Revision> input = getRevisions("soup30.json");
-        long actual = 0;
+        long actual = input.filter(revision -> !revision.user.matches("(?i).*" + "bot" + ".*")).count();
         int expected = 26;
         Assertions.assertEquals(expected, actual);
     }
@@ -149,7 +156,8 @@ public class HigherOrderFunctionsLearningTest {
     @Test
     public void testCountChangesInFebruary() {
         Stream<Revision> input = getRevisions("soup30.json");
-        long actual = 0;
+        long actual = input.filter(revision ->
+                ZonedDateTime.ofInstant(revision.timestamp, ZoneId.of("UTC")).getMonth() == Month.FEBRUARY).count();
         int expected = 9;
         Assertions.assertEquals(expected, actual);
     }
@@ -160,7 +168,8 @@ public class HigherOrderFunctionsLearningTest {
     @Test
     public void testCountChangesByMonth() {
         Stream<Revision> input = getRevisions("soup04.json");
-        Map<Month, Long> actual = null;
+        Map<Month, Long> actual = input.collect(Collectors.groupingBy(revision ->
+                ZonedDateTime.ofInstant(revision.timestamp, ZoneId.of("UTC")).getMonth(), Collectors.counting()));
         Map<Month, Long> expected = Map.of(Month.FEBRUARY, 3L, Month.MARCH, 1L);
         Assertions.assertEquals(expected, actual);
     }
@@ -172,7 +181,9 @@ public class HigherOrderFunctionsLearningTest {
     @Test
     public void testDetermineMostActiveMonth() {
         Stream<Revision> input = getRevisions("soup30.json");
-        Month actual = null;
+        Month actual = Collections.max(input.collect(Collectors.groupingBy(revision ->
+                ZonedDateTime.ofInstant(revision.timestamp, ZoneId.of("UTC")).getMonth(),
+                Collectors.counting())).entrySet(), Map.Entry.comparingByValue()).getKey();
         Month expected = Month.FEBRUARY;
         Assertions.assertEquals(expected, actual);
     }
